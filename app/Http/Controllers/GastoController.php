@@ -6,6 +6,8 @@ use App\Models\Gasto;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
+use function Laravel\Prompts\error;
+
 class GastoController extends Controller
 {
     /**
@@ -13,10 +15,9 @@ class GastoController extends Controller
      */
     public function index()
     {
-
         $gastos = Gasto::orderBy('data', 'desc')->get();
-        return view('gastos.index', compact('gastos'));
-
+        return view('home', compact('gastos'));
+        
     }
 
     /**
@@ -34,15 +35,22 @@ class GastoController extends Controller
     {
         //
         $request->validate([
-            'descricao' =>'required',
-            'valor'=> 'required| numerid',
-            'data' => 'required| date',
-            'categoria'=> 'required'
-            ]);
+            'descricao' => 'required',
+            'valor' => 'required|numeric',
+            'data' => 'required|date',
+            'categoria' => 'required'
+        ]);
 
-            $gasto = Gasto::create($request->all());
-            return redirect()->route('gastos.index')->with('success','Gasto Cadastrado');
+        try {
+            Gasto::create($request->all());
+            return redirect()->route('home')->with('success', 'Gasto Cadastrado');
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
     }
+
+
+
 
     /**
      * Display the specified resource.
@@ -57,31 +65,31 @@ class GastoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Gasto $gasto)
+    public function edit($id)
     {
-        //
+        if (!$gasto = Gasto::find($id)) {
+            return redirect()->route('gasto.index');
+        }
 
-        $gasto = Gasto::findOrFail($gasto->id);
         return view('gastos.edit', compact('gasto'));
     }
-
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Gasto $id)
-    {
-        //
-        $request->validate([
-            'descricao'=> 'required',
-            'valor'=> 'required | numeric',
-            'data'=> 'required |data',
-            'categoria'=> 'required'
-        ]);
-        $gasto = Gasto::findOrFail($id);
-        $gasto->update($request->all());
+    public function update(Request $request, Gasto $gasto)
+{
+    $request->validate([
+        'descricao' => 'required',
+        'valor' => 'required|numeric',
+        'data' => 'required|date',
+        'categoria' => 'required',
+    ]);
 
+    $gasto->update($request->all());
 
-    }
+    return redirect()->route('gasto.index')->with('success', 'Gasto atualizado com sucesso!');
+}
+
 
     /**
      * Remove the specified resource from storage.
@@ -92,6 +100,6 @@ class GastoController extends Controller
         $gasto = Gasto::findOrFail($gasto->id);
         $gasto->delete();
 
-        return redirect()->route('gastos.index')->with('success','Gasto Deletado com Sucesso!');
+        return redirect()->route('gastos.index')->with('success', 'Gasto Deletado com Sucesso!');
     }
 }
